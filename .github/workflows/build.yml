@@ -1,1 +1,60 @@
 
+name: GreenTurtle Raphael HyperOS4 SukiSU-Ultra builtin
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Soviet kernel source (绿龟龟基底)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install build dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y git curl build-essential libssl-dev libelf-dev bison flex pahole bc cpio unzip zip python3 python3-pip
+
+      - name: Download Clang 17.0.6（Soviet/A14固定工具链）
+        run: |
+          wget https://github.com/llvm/llvm-project/releases/download/llvmorg-17.0.6/clang+llvm-17.0.6-x86_64-linux-gnu.tar.xz
+          tar xf clang+llvm-17.0.6-x86_64-linux-gnu.tar.xz
+
+      - name: Inject SukiSU-Ultra builtin
+        run: |
+          curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s builtin
+
+      - name: Config & Compile
+        run: |
+          export ARCH=arm64
+          export SUBARCH=arm64
+          CLANG_PATH=$PWD/clang+llvm-17.0.6-x86_64-linux-gnu/bin
+          export PATH=${CLANG_PATH}:${PATH}
+          export CROSS_COMPILE=aarch64-linux-gnu-
+          export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+
+          make raphael_defconfig
+          scripts/config --enable KALLSYMS
+          scripts/config --enable KALLSYMS_ALL
+          scripts/config --enable KPROBES
+          scripts/config --enable KPROBE_EVENTS
+          scripts/config --disable KPM
+          scripts/config --disable LTO
+          scripts/config --disable THINLTO
+
+          make -j$(nproc) LLVM=1 LLVM_IAS=1
+
+      - name: AnyKernel3打包
+        run: |
+          git clone https://github.com/osm0sis/AnyKernel3.git
+          cp out/arch/arm64/boot/Image.gz AnyKernel3/
+          cp out/arch/arm64/boot/dtbo.img AnyKernel3/
+          cd AnyKernel3
+          zip -r9 ../GreenTurtle-Raphael-SukiSU.zip *
+
+      - name: 上传刷机包
+        uses: actions/upload-artifact@v4
+        with:
+          name: GreenTurtle-Raphael-SukiSU
+          path: GreenTurtle-Raphael-SukiSU.zip
