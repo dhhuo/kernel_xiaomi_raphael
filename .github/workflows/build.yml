@@ -5,7 +5,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Soviet kernel source
+      - name: Checkout kernel source
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -15,12 +15,13 @@ jobs:
           sudo apt update
           sudo apt install -y git curl build-essential libssl-dev libelf-dev bison flex pahole bc cpio unzip zip python3 python3-pip
 
-      - name: Download Snapdragon LLVM 14.0.6
+      - name: Download AOSP clang-r547379
         run: |
-          wget https://github.com/SoMainline/llvm-snapdragon/releases/download/sdllvm-14.0.6/llvm-snapdragon-14.0.6-x86_64-linux.tar.xz
-          tar xf llvm-snapdragon-14.0.6-x86_64-linux.tar.xz
+          wget -q https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/master/clang-r547379.tar.gz
+          mkdir -p clang-r547379
+          tar xf clang-r547379.tar.gz -C clang-r547379
 
-      - name: Inject SukiSU-Ultra builtin
+      - name: Integrate SukiSU-Ultra builtin
         run: |
           curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s builtin
 
@@ -28,7 +29,7 @@ jobs:
         run: |
           export ARCH=arm64
           export SUBARCH=arm64
-          CLANG_PATH=$PWD/llvm-snapdragon-14.0.6-x86_64-linux/bin
+          CLANG_PATH=$PWD/clang-r547379/bin
           export PATH=${CLANG_PATH}:${PATH}
           export CROSS_COMPILE=aarch64-linux-gnu-
           export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
@@ -47,7 +48,8 @@ jobs:
       - name: AnyKernel3 pack
         run: |
           git clone https://github.com/osm0sis/AnyKernel3.git
-          cp out/arch/arm64/boot/Image.gz AnyKernel3/
+          cp out/arch/arm64/boot/Image AnyKernel3/
+          cp out/arch/arm64/boot/dts/qcom/sm8150-v2.dtb AnyKernel3/
           cp out/arch/arm64/boot/dtbo.img AnyKernel3/
           cd AnyKernel3
           zip -r9 ../GreenTurtle-Raphael-SukiSU.zip *
