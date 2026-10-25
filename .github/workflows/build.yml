@@ -51,12 +51,11 @@ jobs:
         run: |
           git clone https://github.com/osm0sis/AnyKernel3.git
           cd AnyKernel3
-          # 配置设备名 raphael (K20 Pro)
-          sed -i 's/device.name1=/device.name1=raphael/' anykernel.sh
-          sed -i 's/device.name2=/device.name2=raphaelin/' anykernel.sh
-          sed -i 's/block.dev=/block.dev=boot/' anykernel.sh
-          # 关闭校验（保险起见）
-          sed -i 's/disable.device.check=0/disable.device.check=1/' anykernel.sh
+          # 关闭设备校验
+          sed -i 's/^do.devicecheck=.*/do.devicecheck=0/' anykernel.sh
+          # 设置设备名 raphael (K20 Pro)
+          sed -i 's/^device.name1=.*/device.name1=raphael/' anykernel.sh
+          sed -i 's/^device.name2=.*/device.name2=raphaelin/' anykernel.sh
           cd ..
           cp out/arch/arm64/boot/Image AnyKernel3/
           cp out/arch/arm64/boot/dts/qcom/sm8150-v2.dtb AnyKernel3/
